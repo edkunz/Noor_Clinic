@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noor Clinic - Patient Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .results {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .patient-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .patient-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #e0e7ff 0%, #d8bfd8 100%);
+        }
+
+        .patient-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .patient-info {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .patient-info span {
+            display: inline-block;
+            margin-right: 15px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .placeholder {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        .dashboard-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .dashboard-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .patients-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .small-card {
+            background: #f9f9f9;
+            border-left: 3px solid #764ba2;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .small-card:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        .small-card-id {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .small-card-info {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Noor Clinic Patient Tracker</h1>
+        <p class="subtitle">Search and track patient A1c levels over time</p>
+        
+        <div class="search-wrapper">
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Search by Patient ID or City... (e.g., '2737' or 'San Luis Obispo')"
+            >
+        </div>
+
+        <div class="error" id="errorMessage"></div>
+
+        <div class="results" id="results">
+            <div class="loading" id="loading" style="display: none;">
+                <span class="spinner"></span>Searching...
+            </div>
+            <div id="resultsList"></div>
+        </div>
+
+        <div class="placeholder" id="placeholder">
+            👆 Start by searching for a patient ID or city name
+        </div>
+
+        <div class="dashboard-section" id="dashboardSection" style="display: none;">
+            <h2>📊 Recent Active Patients</h2>
+            <div class="patients-grid" id="patientGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+        const results = document.getElementById('results');
+        const placeholder = document.getElementById('placeholder');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const patientGrid = document.getElementById('patientGrid');
+
+        let searchTimeout;
+
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                results.classList.remove('show');
+                placeholder.style.display = 'block';
+                errorMessage.classList.remove('show');
+                return;
+            }
+
+            loading.style.display = 'block';
+            resultsList.innerHTML = '';
+            errorMessage.classList.remove('show');
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20`)
+                    .then(response => response.json())
+                    .then(data => {
+                        loading.style.display = 'none';
+                        
+                        if (data.error) {
+                            errorMessage.textContent = data.error;
+                            errorMessage.classList.add('show');
+                            resultsList.innerHTML = '';
+                            results.classList.add('show');
+                            placeholder.style.display = 'none';
+                            return;
+                        }
+
+                        const patients = data.patients || [];
+                        
+                        if (patients.length === 0) {
+                            resultsList.innerHTML = '<div class="placeholder">No patients found</div>';
+                            results.classList.add('show');
+                            placeholder.style.display = 'none';
+                            return;
+                        }
+
+                        resultsList.innerHTML = patients.map(patient => `
+                            <div class="patient-card" onclick="viewPatient(${patient.patient_id})">
+                                <div class="patient-name">
+                                    Patient ${patient.patient_identifier}
+                                    <span class="status-badge ${patient.active ? 'status-active' : 'status-inactive'}">
+                                        ${patient.active ? 'Active' : 'Inactive'}
+                                    </span>
+                                </div>
+                                <div class="patient-info">
+                                    <span>👤 ${patient.sex || 'N/A'}</span>
+                                    <span>📅 Age: ${patient.age_at_registration || 'N/A'}</span>
+                                    <span>📍 ${patient.city || 'N/A'}, ${patient.state || 'N/A'}</span>
+                                </div>
+                            </div>
+                        `).join('');
+
+                        placeholder.style.display = 'none';
+                        results.classList.add('show');
+                    })
+                    .catch(error => {
+                        loading.style.display = 'none';
+                        errorMessage.textContent = 'Error searching patients: ' + error.message;
+                        errorMessage.classList.add('show');
+                    });
+            }, 300);
+        });
+
+        function viewPatient(patientId) {
+            window.location.href = `/patient/${patientId}`;
+        }
+
+        // Load active patients dashboard on page load
+        function loadDashboard() {
+            fetch('/api/patients/all-active?limit=8')
+                .then(response => response.json())
+                .then(data => {
+                    const patients = data.patients || [];
+                    if (patients.length > 0) {
+                        patientGrid.innerHTML = patients.map(patient => `
+                            <div class="small-card" onclick="viewPatient(${patient.patient_id})">
+                                <div class="small-card-id">Patient ${patient.patient_identifier}</div>
+                                <div class="small-card-info">
+                                    <div>Age: ${patient.age_at_registration || 'N/A'}</div>
+                                    <div>${patient.city || 'N/A'}</div>
+                                    <div>A1c: ${patient.latest_a1c || 'N/A'}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                        dashboardSection.style.display = 'block';
+                    }
+                })
+                .catch(error => console.error('Error loading dashboard:', error));
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+-- SQLite version - tables will be created automatically by SQLAlchemy
+-- No need to run this file with SQLite!

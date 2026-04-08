@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Detail - Noor Clinic</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content h1 {
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .patient-info {
+            padding: 30px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 22px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        #a1cChart {
+            width: 100%;
+            height: 500px;
+        }
+
+        .observations-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .observations-table thead {
+            background: #f5f5f5;
+        }
+
+        .observations-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .observations-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .observations-table tbody tr:hover {
+            background: #fafafa;
+        }
+
+        .observation-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .observation-date {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #d32f2f;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1 id="patientName">Patient Details</h1>
+            </div>
+            <a href="/" class="back-button">← Back to Search</a>
+        </div>
+
+        <div id="patientInfoContainer" class="patient-info"></div>
+
+        <div class="content">
+            <h2>📊 A1c Trend Analysis</h2>
+            <div id="chartContainer" class="chart-container">
+                <div class="loading">
+                    <span class="spinner"></span>Loading A1c data...
+                </div>
+            </div>
+
+            <h2>📋 All A1c Observations</h2>
+            <div id="observationsContainer">
+                <div class="loading">
+                    <span class="spinner"></span>Loading observations...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const patientId = new URLSearchParams(window.location.search).get('id') || 
+                         window.location.pathname.split('/').pop();
+
+        async function loadPatientData() {
+            try {
+                const response = await fetch(`/api/patient/${patientId}`);
+                if (!response.ok) throw new Error('Patient not found');
+                
+                const data = await response.json();
+                const patient = data.patient;
+                const observations = data.observations;
+
+                // Update header
+                document.getElementById('patientName').textContent = 
+                    `Patient ${patient.patient_identifier}`;
+
+                // Display patient info
+                const infoContainer = document.getElementById('patientInfoContainer');
+                infoContainer.innerHTML = `
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Patient ID</div>
+                            <div class="info-value">${patient.patient_identifier}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Sex</div>
+                            <div class="info-value">${patient.sex || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Age</div>
+                            <div class="info-value">${patient.age_at_registration || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Location</div>
+                            <div class="info-value">${patient.city || 'N/A'}, ${patient.state || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Most Recent Visit</div>
+                            <div class="info-value">${patient.most_recent_visit_date || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Status</div>
+                            <div class="info-value">
+                                <span class="status-badge ${patient.active ? 'status-active' : 'status-inactive'}">
+                                    ${patient.active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Load chart
+                loadA1cChart();
+
+                // Display observations table
+                if (observations && observations.length > 0) {
+                    const observationsHtml = `
+                        <table class="observations-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Observation</th>
+                                    <th>Value</th>
+                                    <th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${observations.map(obs => `
+                                    <tr>
+                                        <td class="observation-date">${new Date(obs.observation_datetime).toLocaleDateString()}</td>
+                                        <td>${obs.lab_observation_description}</td>
+                                        <td class="observation-value">${obs.lab_observation_value}</td>
+                                        <td>${obs.lab_observation_unit}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    document.getElementById('observationsContainer').innerHTML = observationsHtml;
+                } else {
+                    document.getElementById('observationsContainer').innerHTML = 
+                        '<div class="empty-state">No A1c observations available</div>';
+                }
+
+            } catch (error) {
+                document.getElementById('patientInfoContainer').innerHTML = 
+                    `<div class="error">Error loading patient data: ${error.message}</div>`;
+            }
+        }
+
+        async function loadA1cChart() {
+            try {
+                const response = await fetch(`/api/patient/${patientId}/a1c-graph`);
+                if (!response.ok) throw new Error('Could not load chart data');
+                
+                const data = await response.json();
+                const graphJson = JSON.parse(data.graph);
+
+                const container = document.getElementById('chartContainer');
+                container.innerHTML = '<div id="a1cChart"></div>';
+                
+                Plotly.newPlot('a1cChart', graphJson.data, graphJson.layout);
+
+            } catch (error) {
+                document.getElementById('chartContainer').innerHTML = 
+                    `<div class="empty-state">Could not load chart: ${error.message}</div>`;
+            }
+        }
+
+        // Load data when page is ready
+        loadPatientData();
+    </script>
+</body>
+</html>

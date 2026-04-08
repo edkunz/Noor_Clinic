@@ -1,0 +1,5 @@
+Flask==2.3.0
+SQLAlchemy==2.0.12
+plotly==5.14.0
+pandas==2.0.2
+python-dotenv==1.0.0
