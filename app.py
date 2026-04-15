@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import plotly
 import plotly.graph_objects as go
 import json
+import math
 from datetime import datetime
 
 load_dotenv()
@@ -64,6 +65,31 @@ Base.metadata.create_all(engine)
 
 def get_db_session():
     return Session()
+
+
+def parse_a1c_value(value):
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        cleaned = value.replace('>', '').replace('<', '').strip()
+        cleaned_lower = cleaned.lower()
+        if cleaned_lower in {'nan', 'inf', '-inf', 'infinity', '-infinity', 'none', ''}:
+            return None
+        try:
+            parsed = float(cleaned)
+        except ValueError:
+            return None
+    else:
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            return None
+
+    if math.isnan(parsed) or not math.isfinite(parsed):
+        return None
+    return parsed
+
 
 @app.route('/')
 def index():
@@ -195,15 +221,22 @@ def get_a1c_graph(patient_id):
             marker=dict(size=8)
         ))
         
-        # Add target range (7% is typical target for most diabetics)
+        # Add target range
         fig.add_hline(
-            y=7,
+            y=9,
             line_dash="dash",
             line_color="green",
-            annotation_text="Target: 7%",
+            annotation_text="Target: 9%",
             annotation_position="right"
         )
         
+        # For a single A1c entry, show month/year labels instead of exact times
+        if len(dates) == 1:
+            fig.update_xaxes(
+                tickformat='%b %Y',
+                tickmode='auto'
+            )
+
         # Update layout
         fig.update_layout(
             title=f'A1c Trend for Patient {patient.patient_identifier}',
@@ -255,6 +288,92 @@ def get_all_active_patients():
             })
         
         return jsonify({'patients': results})
+    finally:
+        session.close()
+
+@app.route('/stats')
+def stats_page():
+    """Overall clinic statistics page"""
+    return render_template('stats.html')
+
+@app.route('/api/stats', methods=['GET'])
+def get_statistics():
+    """Return aggregated patient statistics and recent A1c trends"""
+    threshold = request.args.get('threshold', 9.0, type=float)
+    session = get_db_session()
+    try:
+        patients = session.query(Patient).filter(Patient.active == True).all()
+        total_patients = len(patients)
+        diabetic_count = 0
+        sum_a1c = 0.0
+        count_with_a1c = 0
+        patient_records = []
+
+        for patient in patients:
+            observations = session.query(LabObservation).filter(
+                LabObservation.patient_id == patient.patient_id,
+                LabObservation.lab_observation_description.ilike('%A1c%') |
+                LabObservation.lab_observation_description.ilike('%HEMOGLOBIN%')
+            ).order_by(LabObservation.observation_datetime.asc()).all()
+
+            trend = []
+            latest_a1c = None
+            for obs in observations:
+                if obs.observation_datetime is None:
+                    continue
+
+                value = parse_a1c_value(obs.lab_observation_value)
+                if value is None:
+                    continue
+
+                trend.append({
+                    'date': obs.observation_datetime.isoformat(),
+                    'value': value
+                })
+
+            if trend:
+                latest_a1c = trend[-1]['value']
+                sum_a1c += latest_a1c
+                count_with_a1c += 1
+                if latest_a1c >= threshold:
+                    diabetic_count += 1
+
+            patient_records.append({
+                'patient_id': patient.patient_id,
+                'patient_identifier': patient.patient_identifier,
+                'city': patient.city,
+                'state': patient.state,
+                'latest_a1c': latest_a1c,
+                'trend': trend,
+                'diabetic': latest_a1c is not None and latest_a1c >= threshold
+            })
+
+        average_a1c = round(sum_a1c / count_with_a1c, 2) if count_with_a1c else None
+        if average_a1c is not None and (math.isnan(average_a1c) or not math.isfinite(average_a1c)):
+            average_a1c = None
+
+        patient_records = [p for p in patient_records if p['latest_a1c'] is not None]
+        
+        # Separate diabetic and non-diabetic patients
+        diabetic_records = [p for p in patient_records if p['diabetic']]
+        non_diabetic_records = [p for p in patient_records if not p['diabetic']]
+        
+        # Sort each group by A1c (highest first for diabetic, lowest first for non-diabetic)
+        diabetic_records.sort(key=lambda p: p['latest_a1c'], reverse=True)
+        non_diabetic_records.sort(key=lambda p: p['latest_a1c'], reverse=True)
+        
+        # Return mixed sample: diabetic and non-diabetic patients to show the filtering difference
+        # Take up to 40 from each group to get a diverse sample
+        display_patients = (diabetic_records[:40] + non_diabetic_records[:40])
+
+        return jsonify({
+            'total_patients': total_patients,
+            'diabetic_count': diabetic_count,
+            'non_diabetic_count': len(patient_records) - diabetic_count,
+            'average_a1c': average_a1c,
+            'threshold': threshold,
+            'patients': display_patients
+        })
     finally:
         session.close()
 

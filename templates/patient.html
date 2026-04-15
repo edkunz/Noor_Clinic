@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
+            background: linear-gradient(135deg, #ffe8cc 0%, #fff9f1 100%);
             padding: 20px;
         }
 
@@ -22,13 +22,13 @@
             max-width: 1000px;
             margin: 0 auto;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 18px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
             overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ff9248 0%, #ff6b00 100%);
             color: white;
             padding: 30px;
             display: flex;
@@ -71,8 +71,8 @@
         .info-item {
             background: white;
             padding: 15px;
-            border-radius: 8px;
-            border-left: 3px solid #667eea;
+            border-radius: 10px;
+            border-left: 3px solid #ff6b00;
         }
 
         .info-label {
@@ -164,7 +164,7 @@
 
         .observation-value {
             font-weight: 600;
-            color: #667eea;
+            color: #ff6b00;
         }
 
         .observation-date {
@@ -188,7 +188,7 @@
 
         .spinner {
             border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border-top: 3px solid #ff6b00;
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -299,7 +299,7 @@
                         <table class="observations-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th>Date / Time</th>
                                     <th>Observation</th>
                                     <th>Value</th>
                                     <th>Unit</th>
@@ -308,7 +308,7 @@
                             <tbody>
                                 ${observations.map(obs => `
                                     <tr>
-                                        <td class="observation-date">${new Date(obs.observation_datetime).toLocaleDateString()}</td>
+                                        <td class="observation-date">${new Date(obs.observation_datetime).toLocaleString()}</td>
                                         <td>${obs.lab_observation_description}</td>
                                         <td class="observation-value">${obs.lab_observation_value}</td>
                                         <td>${obs.lab_observation_unit}</td>
