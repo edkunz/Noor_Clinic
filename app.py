@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import json
 import math
 from datetime import datetime
+from collections import defaultdict
 
 load_dotenv()
 
@@ -63,8 +64,102 @@ class LabObservation(Base):
 # Create tables
 Base.metadata.create_all(engine)
 
+TREND_DIRECTION_EPSILON = 0.1
+
 def get_db_session():
     return Session()
+
+
+def parse_bool(value, default=False):
+    if value is None:
+        return default
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def get_patient_clinic(patient):
+    return getattr(patient, 'clinic', None)
+
+
+def classify_trend_direction(values):
+    if len(values) < 2:
+        return 'single_visit'
+
+    delta = values[-1] - values[0]
+    if delta > TREND_DIRECTION_EPSILON:
+        return 'increasing'
+    if delta < -TREND_DIRECTION_EPSILON:
+        return 'decreasing'
+    return 'stable'
+
+
+def compute_percentile(sorted_values, percentile):
+    if not sorted_values:
+        return None
+    if len(sorted_values) == 1:
+        return sorted_values[0]
+
+    position = (len(sorted_values) - 1) * percentile
+    lower_index = int(math.floor(position))
+    upper_index = int(math.ceil(position))
+
+    if lower_index == upper_index:
+        return sorted_values[lower_index]
+
+    lower_value = sorted_values[lower_index]
+    upper_value = sorted_values[upper_index]
+    weight = position - lower_index
+    return lower_value + (upper_value - lower_value) * weight
+
+
+def build_monthly_summary(patient_records):
+    monthly_groups = defaultdict(list)
+
+    for patient in patient_records:
+        latest_by_month = {}
+        for point in patient['trend']:
+            month_key = point['date'][:7]
+            latest_by_month[month_key] = point['value']
+
+        for month_key, value in latest_by_month.items():
+            monthly_groups[month_key].append(value)
+
+    summary = []
+    for month_key in sorted(monthly_groups.keys()):
+        values = sorted(monthly_groups[month_key])
+        summary.append({
+            'month': month_key,
+            'median': round(compute_percentile(values, 0.50), 2),
+            'p25': round(compute_percentile(values, 0.25), 2),
+            'p75': round(compute_percentile(values, 0.75), 2),
+            'p10': round(compute_percentile(values, 0.10), 2),
+            'p90': round(compute_percentile(values, 0.90), 2),
+            'patient_count': len(values)
+        })
+
+    return summary
+
+
+def build_latest_a1c_buckets(latest_values):
+    bucket_definitions = [
+        ('<7.0', lambda value: value < 7.0),
+        ('7.0-8.9', lambda value: 7.0 <= value < 9.0),
+        ('9.0-9.9', lambda value: 9.0 <= value < 10.0),
+        ('10.0-11.9', lambda value: 10.0 <= value < 12.0),
+        ('12.0+', lambda value: value >= 12.0),
+    ]
+
+    buckets = []
+    total = len(latest_values)
+    for label, predicate in bucket_definitions:
+        count = sum(1 for value in latest_values if predicate(value))
+        percent = round((count / total) * 100, 1) if total else 0
+        buckets.append({
+            'label': label,
+            'count': count,
+            'percent': percent
+        })
+
+    return buckets
 
 
 def parse_a1c_value(value):
@@ -298,15 +393,44 @@ def stats_page():
 
 @app.route('/api/stats', methods=['GET'])
 def get_statistics():
-    """Return aggregated patient statistics and recent A1c trends"""
+    """Return clinician-oriented population summaries for A1c management"""
     threshold = request.args.get('threshold', 9.0, type=float)
+    city = request.args.get('city', '', type=str).strip()
+    clinic = request.args.get('clinic', '', type=str).strip()
+    trend_direction = request.args.get('trend_direction', 'all', type=str).strip().lower()
+    exclude_single_visit = parse_bool(request.args.get('exclude_single_visit'), default=False)
+
+    if trend_direction not in {'all', 'increasing', 'decreasing'}:
+        trend_direction = 'all'
+
     session = get_db_session()
     try:
-        patients = session.query(Patient).filter(Patient.active == True).all()
-        total_patients = len(patients)
-        diabetic_count = 0
-        sum_a1c = 0.0
-        count_with_a1c = 0
+        clinic_filter_supported = hasattr(Patient, 'clinic')
+
+        city_options = [
+            row[0] for row in session.query(Patient.city)
+            .filter(Patient.active == True, Patient.city.isnot(None), Patient.city != '')
+            .distinct()
+            .order_by(Patient.city.asc())
+            .all()
+        ]
+
+        clinic_options = []
+        if clinic_filter_supported:
+            clinic_column = getattr(Patient, 'clinic')
+            clinic_options = [
+                row[0] for row in session.query(clinic_column)
+                .filter(Patient.active == True, clinic_column.isnot(None), clinic_column != '')
+                .distinct()
+                .order_by(clinic_column.asc())
+                .all()
+            ]
+
+        patients_query = session.query(Patient).filter(Patient.active == True)
+        if city and city != 'all':
+            patients_query = patients_query.filter(Patient.city == city)
+
+        patients = patients_query.all()
         patient_records = []
 
         for patient in patients:
@@ -317,7 +441,6 @@ def get_statistics():
             ).order_by(LabObservation.observation_datetime.asc()).all()
 
             trend = []
-            latest_a1c = None
             for obs in observations:
                 if obs.observation_datetime is None:
                     continue
@@ -331,48 +454,115 @@ def get_statistics():
                     'value': value
                 })
 
-            if trend:
-                latest_a1c = trend[-1]['value']
-                sum_a1c += latest_a1c
-                count_with_a1c += 1
-                if latest_a1c >= threshold:
-                    diabetic_count += 1
+            visit_count = len(trend)
+            latest_a1c = trend[-1]['value'] if trend else None
+            trend_values = [point['value'] for point in trend]
+            patient_trend_direction = classify_trend_direction(trend_values)
+            patient_clinic = get_patient_clinic(patient)
+
+            if clinic and clinic != 'all':
+                if not clinic_filter_supported or patient_clinic != clinic:
+                    continue
+
+            if exclude_single_visit and visit_count < 2:
+                continue
+
+            if trend_direction != 'all' and patient_trend_direction != trend_direction:
+                continue
 
             patient_records.append({
                 'patient_id': patient.patient_id,
                 'patient_identifier': patient.patient_identifier,
                 'city': patient.city,
                 'state': patient.state,
+                'clinic': patient_clinic,
+                'visit_count': visit_count,
                 'latest_a1c': latest_a1c,
                 'trend': trend,
-                'diabetic': latest_a1c is not None and latest_a1c >= threshold
+                'diabetic': latest_a1c is not None and latest_a1c >= threshold,
+                'trend_direction': patient_trend_direction
             })
 
+        total_patients = len(patient_records)
+        records_with_a1c = [p for p in patient_records if p['latest_a1c'] is not None]
+        diabetic_count = sum(1 for p in records_with_a1c if p['diabetic'])
+        count_with_a1c = len(records_with_a1c)
+        latest_values = sorted(p['latest_a1c'] for p in records_with_a1c)
+        sum_a1c = sum(latest_values)
         average_a1c = round(sum_a1c / count_with_a1c, 2) if count_with_a1c else None
         if average_a1c is not None and (math.isnan(average_a1c) or not math.isfinite(average_a1c)):
             average_a1c = None
+        median_latest_a1c = round(compute_percentile(latest_values, 0.50), 2) if latest_values else None
 
-        patient_records = [p for p in patient_records if p['latest_a1c'] is not None]
-        
-        # Separate diabetic and non-diabetic patients
+        patient_records = records_with_a1c
+
         diabetic_records = [p for p in patient_records if p['diabetic']]
         non_diabetic_records = [p for p in patient_records if not p['diabetic']]
-        
-        # Sort each group by A1c (highest first for diabetic, lowest first for non-diabetic)
+
         diabetic_records.sort(key=lambda p: p['latest_a1c'], reverse=True)
         non_diabetic_records.sort(key=lambda p: p['latest_a1c'], reverse=True)
-        
-        # Return mixed sample: diabetic and non-diabetic patients to show the filtering difference
-        # Take up to 40 from each group to get a diverse sample
-        display_patients = (diabetic_records[:40] + non_diabetic_records[:40])
+        sorted_patients = diabetic_records + non_diabetic_records
+
+        improved_count = sum(1 for p in patient_records if p['trend_direction'] == 'decreasing')
+        worsened_count = sum(1 for p in patient_records if p['trend_direction'] == 'increasing')
+        stable_count = sum(1 for p in patient_records if p['trend_direction'] == 'stable')
+        single_visit_count = sum(1 for p in patient_records if p['trend_direction'] == 'single_visit')
+        above_threshold_percent = round((diabetic_count / count_with_a1c) * 100, 1) if count_with_a1c else 0
+        improved_percent = round((improved_count / count_with_a1c) * 100, 1) if count_with_a1c else 0
+
+        for patient in patient_records:
+            first_a1c = patient['trend'][0]['value']
+            delta = round(patient['latest_a1c'] - first_a1c, 2)
+            patient['first_a1c'] = first_a1c
+            patient['delta_from_first'] = delta
+            patient['latest_date'] = patient['trend'][-1]['date']
+
+        monthly_summary = build_monthly_summary(patient_records)
+        latest_a1c_buckets = build_latest_a1c_buckets(latest_values)
+        top_priority_patients = sorted(
+            patient_records,
+            key=lambda p: (
+                p['latest_a1c'] < threshold,
+                p['delta_from_first'] <= 0,
+                -p['latest_a1c'],
+                -p['delta_from_first'],
+                -p['visit_count']
+            )
+        )[:12]
 
         return jsonify({
             'total_patients': total_patients,
             'diabetic_count': diabetic_count,
             'non_diabetic_count': len(patient_records) - diabetic_count,
             'average_a1c': average_a1c,
+            'median_latest_a1c': median_latest_a1c,
             'threshold': threshold,
-            'patients': display_patients
+            'patients': sorted_patients,
+            'monthly_summary': monthly_summary,
+            'latest_a1c_buckets': latest_a1c_buckets,
+            'trend_summary': {
+                'improving': improved_count,
+                'worsening': worsened_count,
+                'stable': stable_count,
+                'single_visit': single_visit_count
+            },
+            'priority_patients': top_priority_patients,
+            'metrics': {
+                'patients_with_a1c': count_with_a1c,
+                'above_threshold_percent': above_threshold_percent,
+                'improved_percent': improved_percent
+            },
+            'filters': {
+                'city': city or 'all',
+                'clinic': clinic or 'all',
+                'trend_direction': trend_direction,
+                'exclude_single_visit': exclude_single_visit
+            },
+            'filter_options': {
+                'cities': city_options,
+                'clinics': clinic_options,
+                'clinic_filter_supported': clinic_filter_supported
+            }
         })
     finally:
         session.close()
