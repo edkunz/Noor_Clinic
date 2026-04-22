@@ -83,7 +83,7 @@ A Flask-based patient tracking application that allows you to search for patient
 
 ## Notes
 
-- A1c target of 7% is used as default, configurable in chart code
+- A1c target of 9% is used as default, configurable in chart code
 - Values like ">14.0" are automatically cleaned and converted to numeric values
 - Database includes indices on frequently queried columns for performance
 

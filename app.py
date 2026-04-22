@@ -296,15 +296,96 @@ def stats_page():
     """Overall clinic statistics page"""
     return render_template('stats.html')
 
+@app.route('/api/stats/filters', methods=['GET'])
+def get_stats_filters():
+    """Get available filter options for stats page"""
+    session = get_db_session()
+    try:
+        # Get unique cities
+        cities = session.query(Patient.city).filter(
+            Patient.active == True,
+            Patient.city.isnot(None)
+        ).distinct().all()
+        cities = sorted(list(set(city[0].strip() for city in cities if city[0] and city[0].strip())))
+        
+        # Hardcode sex options to Male and Female
+        sexes = ['Male', 'Female']
+        
+        # Get date range
+        date_range = session.query(
+            func.min(Patient.most_recent_visit_date),
+            func.max(Patient.most_recent_visit_date)
+        ).filter(Patient.active == True).first()
+        
+        min_date = date_range[0].isoformat() if date_range[0] else None
+        max_date = date_range[1].isoformat() if date_range[1] else None
+        
+        return jsonify({
+            'cities': cities,
+            'sexes': sexes,
+            'date_range': {
+                'min': min_date,
+                'max': max_date
+            }
+        })
+    finally:
+        session.close()
 @app.route('/api/stats', methods=['GET'])
 def get_statistics():
     """Return aggregated patient statistics and recent A1c trends"""
-    threshold = request.args.get('threshold', 9.0, type=float)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    sex_filter = request.args.get('sex')
+    city_filter = request.args.get('city')
+    age_group = request.args.get('age_group')
+    a1c_range = request.args.get('a1c_range', 'all')
+    
     session = get_db_session()
     try:
-        patients = session.query(Patient).filter(Patient.active == True).all()
+        # Build base query with filters
+        query = session.query(Patient).filter(Patient.active == True)
+        
+        # Apply date range filter (based on most_recent_visit_date)
+        if start_date:
+            try:
+                start = datetime.strptime(start_date, '%Y-%m-%d').date()
+                query = query.filter(Patient.most_recent_visit_date >= start)
+            except ValueError:
+                pass  # Invalid date format, ignore filter
+        
+        if end_date:
+            try:
+                end = datetime.strptime(end_date, '%Y-%m-%d').date()
+                query = query.filter(Patient.most_recent_visit_date <= end)
+            except ValueError:
+                pass  # Invalid date format, ignore filter
+        
+        # Apply sex filter
+        if sex_filter and sex_filter != 'all':
+            query = query.filter(Patient.sex.ilike(sex_filter))
+        
+        # Apply city filter
+        if city_filter and city_filter != 'all':
+            query = query.filter(Patient.city.ilike(f'%{city_filter.strip()}%'))
+        
+        # Apply age group filter
+        if age_group and age_group != 'all':
+            if age_group == '0-18':
+                query = query.filter(Patient.age_at_registration.between(0, 18))
+            elif age_group == '19-35':
+                query = query.filter(Patient.age_at_registration.between(19, 35))
+            elif age_group == '36-50':
+                query = query.filter(Patient.age_at_registration.between(36, 50))
+            elif age_group == '51-65':
+                query = query.filter(Patient.age_at_registration.between(51, 65))
+            elif age_group == '66+':
+                query = query.filter(Patient.age_at_registration >= 66)
+        
+        patients = query.all()
         total_patients = len(patients)
-        diabetic_count = 0
+        low_count = 0  # 0-5.5%
+        normal_count = 0  # 5.5-9%
+        high_count = 0  # 9%+
         sum_a1c = 0.0
         count_with_a1c = 0
         patient_records = []
@@ -335,43 +416,59 @@ def get_statistics():
                 latest_a1c = trend[-1]['value']
                 sum_a1c += latest_a1c
                 count_with_a1c += 1
-                if latest_a1c >= threshold:
-                    diabetic_count += 1
+                
+                # Categorize by A1c range
+                if latest_a1c < 5.5:
+                    low_count += 1
+                    a1c_category = 'low'
+                elif latest_a1c < 9.0:
+                    normal_count += 1
+                    a1c_category = 'normal'
+                else:
+                    high_count += 1
+                    a1c_category = 'high'
+            else:
+                a1c_category = 'no_data'
 
             patient_records.append({
                 'patient_id': patient.patient_id,
                 'patient_identifier': patient.patient_identifier,
                 'city': patient.city,
                 'state': patient.state,
+                'sex': patient.sex,
+                'age_at_registration': patient.age_at_registration,
                 'latest_a1c': latest_a1c,
                 'trend': trend,
-                'diabetic': latest_a1c is not None and latest_a1c >= threshold
+                'a1c_category': a1c_category
             })
-
+        
+        # Apply A1c range filter
+        if a1c_range != 'all':
+            if a1c_range == 'low':
+                patient_records = [p for p in patient_records if p['a1c_category'] == 'low']
+            elif a1c_range == 'normal':
+                patient_records = [p for p in patient_records if p['a1c_category'] == 'normal']
+            elif a1c_range == 'high':
+                patient_records = [p for p in patient_records if p['a1c_category'] == 'high']
+        
         average_a1c = round(sum_a1c / count_with_a1c, 2) if count_with_a1c else None
         if average_a1c is not None and (math.isnan(average_a1c) or not math.isfinite(average_a1c)):
             average_a1c = None
 
-        patient_records = [p for p in patient_records if p['latest_a1c'] is not None]
+        # Return mixed sample: patients from different categories to show the filtering difference
+        # Take up to 40 from each category
+        low_patients = [p for p in patient_records if p['a1c_category'] == 'low']
+        normal_patients = [p for p in patient_records if p['a1c_category'] == 'normal']
+        high_patients = [p for p in patient_records if p['a1c_category'] == 'high']
         
-        # Separate diabetic and non-diabetic patients
-        diabetic_records = [p for p in patient_records if p['diabetic']]
-        non_diabetic_records = [p for p in patient_records if not p['diabetic']]
-        
-        # Sort each group by A1c (highest first for diabetic, lowest first for non-diabetic)
-        diabetic_records.sort(key=lambda p: p['latest_a1c'], reverse=True)
-        non_diabetic_records.sort(key=lambda p: p['latest_a1c'], reverse=True)
-        
-        # Return mixed sample: diabetic and non-diabetic patients to show the filtering difference
-        # Take up to 40 from each group to get a diverse sample
-        display_patients = (diabetic_records[:40] + non_diabetic_records[:40])
+        display_patients = (low_patients[:40] + normal_patients[:40] + high_patients[:40])
 
         return jsonify({
             'total_patients': total_patients,
-            'diabetic_count': diabetic_count,
-            'non_diabetic_count': len(patient_records) - diabetic_count,
+            'low_count': low_count,
+            'normal_count': normal_count,
+            'high_count': high_count,
             'average_a1c': average_a1c,
-            'threshold': threshold,
             'patients': display_patients
         })
     finally:

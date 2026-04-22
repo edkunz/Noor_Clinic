@@ -31,7 +31,7 @@
 
         .hero {
             background: linear-gradient(135deg, #ff9248 0%, #ff6b00 100%);
-            padding: 35px 40px;
+            padding: 30px 40px;
             color: white;
             display: flex;
             flex-wrap: wrap;
@@ -41,15 +41,18 @@
         }
 
         .hero h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             line-height: 1.1;
+            margin: 0;
+            font-weight: 700;
         }
 
         .hero p {
             color: rgba(255,255,255,0.9);
-            max-width: 620px;
-            margin-top: 10px;
+            max-width: 600px;
+            margin: 8px 0 0 0;
             font-size: 1rem;
+            line-height: 1.4;
         }
 
         .hero-actions {
@@ -62,18 +65,22 @@
         .filter-button {
             background: white;
             color: #ff6b00;
-            border: none;
-            border-radius: 999px;
-            padding: 12px 22px;
-            font-weight: 700;
+            border: 2px solid white;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            display: inline-block;
         }
 
         .button:hover,
         .filter-button:hover {
+            background: rgba(255, 255, 255, 0.9);
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         .content {
@@ -82,116 +89,117 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 34px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .metric-card {
-            background: white;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 107, 0, 0.12);
-            padding: 24px;
-            box-shadow: 0 10px 30px rgba(255, 107, 0, 0.12);
+            background: linear-gradient(135deg, #fff 0%, #fefefe 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 107, 0, 0.15);
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 0, 0.15);
         }
 
         .metric-card h3 {
-            font-size: 0.9rem;
-            letter-spacing: 0.08em;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            margin-bottom: 12px;
-            color: #ff7b00;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
         }
 
         .metric-card p {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
             color: #333;
+            margin: 0;
         }
 
         .controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 18px;
-            align-items: end;
-            margin-bottom: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 107, 0, 0.12);
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.08);
         }
 
         .control-group {
-            background: white;
-            border-radius: 18px;
-            padding: 18px 20px;
-            border: 1px solid rgba(255, 107, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            min-width: 140px;
         }
 
         .control-group label {
             display: block;
-            margin-bottom: 10px;
-            color: #777;
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group input[type="date"],
+        .control-group select {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
             font-size: 0.9rem;
-            font-weight: 700;
-        }
-
-        .control-group input[type="number"] {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #ffd6a8;
-            border-radius: 12px;
-            font-size: 1rem;
             color: #333;
+            background: #fafafa;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .control-group .toggle-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
+        .filters-header {
+            margin-bottom: 16px;
+            text-align: center;
         }
 
-        .control-group .toggle-row span {
-            font-weight: 700;
-            color: #333;
-        }
-
-        .control-switch {
-            position: relative;
-            width: 52px;
-            height: 28px;
-        }
-
-        .control-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
+        .filter-toggle {
+            background: linear-gradient(135deg, #ff9248 0%, #ff6b00 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
             cursor: pointer;
-            inset: 0;
-            background: #e8e2d8;
-            border-radius: 999px;
-            transition: 0.2s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 3px;
-            bottom: 3px;
-            background: white;
-            border-radius: 50%;
-            transition: 0.2s;
+        .filter-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
         }
 
-        .control-switch input:checked + .slider {
-            background: #ff8b00;
+        .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
         }
 
-        .control-switch input:checked + .slider:before {
-            transform: translateX(24px);
+        .controls.collapsed {
+            display: none;
+        }
+
+        .filter-toggle.collapsed .toggle-icon {
+            transform: rotate(180deg);
         }
 
         .stats-layout {
@@ -203,9 +211,10 @@
 
         .chart-panel {
             background: white;
-            border-radius: 18px;
+            border-radius: 12px;
             padding: 24px;
             border: 1px solid rgba(255, 107, 0, 0.15);
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.08);
             min-height: 600px;
         }
 
@@ -219,11 +228,21 @@
             gap: 10px;
             align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 107, 0, 0.1);
         }
 
         .panel-header h2 {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             color: #333;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .graph-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
 
         .patient-card {
@@ -293,15 +312,18 @@
             padding: 42px 20px;
             color: #7a6650;
             font-size: 1rem;
+            background: #fefefe;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
         }
 
         .footer {
             text-align: center;
-            padding: 18px 20px;
-            color: #5c451f;
-            font-size: 0.9rem;
-            background: #fff3e0;
-            border-top: 1px solid rgba(255, 107, 0, 0.14);
+            padding: 16px 20px;
+            color: #666;
+            font-size: 0.85rem;
+            background: #f8f8f8;
+            border-top: 1px solid rgba(255, 107, 0, 0.1);
         }
 
         @media (max-width: 1000px) {
@@ -335,31 +357,66 @@
                     <p id="metricAverage">—</p>
                 </div>
                 <div class="metric-card">
-                    <h3>Patients at or above Threshold</h3>
-                    <p id="metricDiabetic">—</p>
+                    <h3>Low A1c (0-5.5%)</h3>
+                    <p id="metricLow">—</p>
                 </div>
                 <div class="metric-card">
-                    <h3>Patients below Threshold</h3>
-                    <p id="metricNonDiabetic">—</p>
+                    <h3>Normal A1c (5.5-9%)</h3>
+                    <p id="metricNormal">—</p>
+                </div>
+                <div class="metric-card">
+                    <h3>High A1c (9%+)</h3>
+                    <p id="metricHigh">—</p>
                 </div>
             </div>
 
-            <div class="controls">
+            <div class="filters-header">
+                <button class="filter-toggle" id="filterToggle">
+                    <span class="toggle-icon">▼</span>
+                    Filters
+                </button>
+            </div>
+
+            <div class="controls" id="controlsPanel">
                 <div class="control-group">
-                    <label for="thresholdInput">Diabetic threshold (%)</label>
-                    <input type="number" id="thresholdInput" min="5" max="20" step="0.1" value="9.0">
+                    <label for="startDateInput">Start Date</label>
+                    <input type="date" id="startDateInput">
                 </div>
                 <div class="control-group">
-                    <div class="toggle-row">
-                        <span>Show diabetic patients only</span>
-                        <label class="control-switch">
-                            <input type="checkbox" id="diabeticOnlyToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
+                    <label for="endDateInput">End Date</label>
+                    <input type="date" id="endDateInput">
                 </div>
                 <div class="control-group">
-                    <div class="badge diabetic" id="thresholdBadge">Threshold 9%</div>
+                    <label for="sexSelect">Sex</label>
+                    <select id="sexSelect">
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="citySelect">City</label>
+                    <select id="citySelect">
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="ageGroupSelect">Age Group</label>
+                    <select id="ageGroupSelect">
+                        <option value="all">All</option>
+                        <option value="0-18">0-18 years</option>
+                        <option value="19-35">19-35 years</option>
+                        <option value="36-50">36-50 years</option>
+                        <option value="51-65">51-65 years</option>
+                        <option value="66+">66+ years</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="a1cRangeSelect">A1c Range</label>
+                    <select id="a1cRangeSelect">
+                        <option value="all">All</option>
+                        <option value="low">0-5.5%</option>
+                        <option value="normal">5.5-9%</option>
+                        <option value="high">9%+</option>
+                    </select>
                 </div>
             </div>
 
@@ -368,7 +425,7 @@
                     <div class="panel-header">
                         <h2>All Patient A1c Trends</h2>
                         <div class="graph-actions">
-                            <button class="filter-button" id="clearSelection">Show All Patients</button>
+                            <button class="filter-button" id="clearSelection">Clear All Filters</button>
                         </div>
                     </div>
                     <div id="statsChart"></div>
@@ -376,26 +433,87 @@
             </div>
         </div>
 
-        <div class="footer">Individual patient trendlines are semi-transparent. The bold orange line represents the overall clinic trend. Chart updates when the threshold changes.</div>
+        <div class="footer">Individual patient trendlines are semi-transparent. The bold orange line represents the overall clinic trend. Reference lines show A1c boundaries at 5.5% and 9%. Chart updates when filters change.</div>
     </div>
 
     <script>
         const metricTotal = document.getElementById('metricTotal');
         const metricAverage = document.getElementById('metricAverage');
-        const metricDiabetic = document.getElementById('metricDiabetic');
-        const metricNonDiabetic = document.getElementById('metricNonDiabetic');
-        const thresholdInput = document.getElementById('thresholdInput');
-        const diabeticOnlyToggle = document.getElementById('diabeticOnlyToggle');
-        const thresholdBadge = document.getElementById('thresholdBadge');
+        const metricLow = document.getElementById('metricLow');
+        const metricNormal = document.getElementById('metricNormal');
+        const metricHigh = document.getElementById('metricHigh');
+        const startDateInput = document.getElementById('startDateInput');
+        const endDateInput = document.getElementById('endDateInput');
+        const sexSelect = document.getElementById('sexSelect');
+        const citySelect = document.getElementById('citySelect');
+        const ageGroupSelect = document.getElementById('ageGroupSelect');
+        const a1cRangeSelect = document.getElementById('a1cRangeSelect');
         const refreshButton = document.getElementById('refreshButton');
         const clearSelection = document.getElementById('clearSelection');
+        const filterToggle = document.getElementById('filterToggle');
+        const controlsPanel = document.getElementById('controlsPanel');
         let patientData = [];
+        let filterOptions = {};
+        let filterOptions = {};
+
+        const loadFilterOptions = async () => {
+            try {
+                console.log('Loading filter options...');
+                const response = await fetch('/api/stats/filters');
+                const data = await response.json();
+                console.log('Filter data received:', data);
+                if (response.ok) {
+                    filterOptions = data;
+                    
+                    // Populate sex dropdown
+                    sexSelect.innerHTML = '<option value="all">All</option>';
+                    data.sexes.forEach(sex => {
+                        const option = document.createElement('option');
+                        option.value = sex;
+                        option.textContent = sex;
+                        sexSelect.appendChild(option);
+                    });
+                    console.log('Sex options populated:', data.sexes);
+                    
+                    // Populate city dropdown
+                    citySelect.innerHTML = '<option value="all">All</option>';
+                    data.cities.forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city;
+                        option.textContent = city;
+                        citySelect.appendChild(option);
+                    });
+                    console.log('City options populated:', data.cities.length, 'cities');
+                    
+                    // Set date range
+                    if (data.date_range.min) {
+                        startDateInput.min = data.date_range.min.split('T')[0];
+                        startDateInput.max = data.date_range.max.split('T')[0];
+                    }
+                    if (data.date_range.max) {
+                        endDateInput.min = data.date_range.min.split('T')[0];
+                        endDateInput.max = data.date_range.max.split('T')[0];
+                    }
+                } else {
+                    console.error('Failed to load filter options:', response.status, data);
+                }
+            } catch (error) {
+                console.error('Error loading filter options:', error);
+            }
+        };
 
         const loadStatistics = async () => {
-            const threshold = Number(thresholdInput.value) || 9.0;
-            thresholdBadge.textContent = `Threshold ${threshold.toFixed(1)}%`;
+            // Build query parameters
+            const params = new URLSearchParams();
+            
+            if (startDateInput.value) params.append('start_date', startDateInput.value);
+            if (endDateInput.value) params.append('end_date', endDateInput.value);
+            if (sexSelect.value !== 'all') params.append('sex', sexSelect.value);
+            if (citySelect.value !== 'all') params.append('city', citySelect.value);
+            if (ageGroupSelect.value !== 'all') params.append('age_group', ageGroupSelect.value);
+            if (a1cRangeSelect.value !== 'all') params.append('a1c_range', a1cRangeSelect.value);
 
-            const response = await fetch(`/api/stats?threshold=${threshold}`);
+            const response = await fetch(`/api/stats?${params}`);
             const data = await response.json();
             if (!response.ok) {
                 document.getElementById('statsChart').innerHTML = '<div class="empty-state">Unable to load stats.</div>';
@@ -405,19 +523,18 @@
             patientData = data.patients;
             metricTotal.textContent = data.total_patients;
             metricAverage.textContent = data.average_a1c !== null ? `${data.average_a1c}%` : 'N/A';
-            metricDiabetic.textContent = data.diabetic_count;
-            metricNonDiabetic.textContent = data.non_diabetic_count;
+            metricLow.textContent = data.low_count;
+            metricNormal.textContent = data.normal_count;
+            metricHigh.textContent = data.high_count;
 
             renderChart();
         };
 
         const renderChart = () => {
             const container = document.getElementById('statsChart');
-            const showOnly = diabeticOnlyToggle.checked;
-            const filteredPatients = showOnly ? patientData.filter(p => p.diabetic) : patientData;
 
-            if (!filteredPatients.length) {
-                container.innerHTML = '<div class="empty-state">No matching patients for this filter.</div>';
+            if (!patientData.length) {
+                container.innerHTML = '<div class="empty-state">No patients match the current filters.<br><button onclick="document.getElementById(\'clearSelection\').click()" style="margin-top: 10px; padding: 8px 16px; background: #ff6b00; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear Filters</button></div>';
                 return;
             }
 
@@ -426,7 +543,7 @@
             let allValues = [];
 
             // Add individual patient trendlines with transparency
-            filteredPatients.forEach((patient, index) => {
+            patientData.forEach((patient, index) => {
                 if (patient.trend && patient.trend.length > 0) {
                     const dates = patient.trend.map(point => new Date(point.date));
                     const values = patient.trend.map(point => point.value);
@@ -434,9 +551,17 @@
                     allDates.push(...dates);
                     allValues.push(...values);
 
-                    // Assign a color based on diabetic status 
-                    const isHighA1c = patient.diabetic;
-                    const lineColor = isHighA1c ? 'rgba(255, 107, 0, 0.15)' : 'rgba(52, 80, 161, 0.15)';
+                    // Assign a color based on A1c category
+                    let lineColor;
+                    if (patient.a1c_category === 'low') {
+                        lineColor = 'rgba(52, 152, 219, 0.15)'; // Blue for low
+                    } else if (patient.a1c_category === 'normal') {
+                        lineColor = 'rgba(46, 204, 113, 0.15)'; // Green for normal
+                    } else if (patient.a1c_category === 'high') {
+                        lineColor = 'rgba(231, 76, 60, 0.15)'; // Red for high
+                    } else {
+                        lineColor = 'rgba(149, 165, 166, 0.15)'; // Gray for no data
+                    }
 
                     traces.push({
                         x: dates,
@@ -452,6 +577,11 @@
                     });
                 }
             });
+
+            if (!traces.length) {
+                container.innerHTML = '<div class="empty-state">No A1c trend data available for the selected patients.<br><button onclick="document.getElementById(\'clearSelection\').click()" style="margin-top: 10px; padding: 8px 16px; background: #ff6b00; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear Filters</button></div>';
+                return;
+            }
 
             // Calculate and add overall trendline
             if (allDates.length > 1) {
@@ -508,25 +638,44 @@
                 }
             }
 
-            const threshold = Number(thresholdInput.value) || 9.0;
-            
-            // Add threshold line
-            traces.push({
-                x: [new Date(Math.min(...allDates)), new Date(Math.max(...allDates))],
-                y: [threshold, threshold],
-                mode: 'lines',
-                name: `Threshold ${threshold.toFixed(1)}%`,
-                line: { 
-                    dash: 'dash', 
-                    width: 2, 
-                    color: '#ff3d00' 
-                },
-                hovertemplate: `Threshold: ${threshold.toFixed(1)}%<extra></extra>`,
-                showlegend: true
-            });
+            // Add reference lines at 5.5% and 9%
+            if (allDates.length > 0) {
+                const minDate = new Date(Math.min(...allDates));
+                const maxDate = new Date(Math.max(...allDates));
+                
+                // Line at 5.5%
+                traces.push({
+                    x: [minDate, maxDate],
+                    y: [5.5, 5.5],
+                    mode: 'lines',
+                    name: 'Low-Normal Boundary (5.5%)',
+                    line: { 
+                        dash: 'dot', 
+                        width: 2, 
+                        color: '#3498db' 
+                    },
+                    hovertemplate: 'Low-Normal Boundary: 5.5%<extra></extra>',
+                    showlegend: true
+                });
+                
+                // Line at 9%
+                traces.push({
+                    x: [minDate, maxDate],
+                    y: [9.0, 9.0],
+                    mode: 'lines',
+                    name: 'Normal-High Boundary (9%)',
+                    line: { 
+                        dash: 'dash', 
+                        width: 2, 
+                        color: '#e74c3c' 
+                    },
+                    hovertemplate: 'Normal-High Boundary: 9%<extra></extra>',
+                    showlegend: true
+                });
+            }
 
             const layout = {
-                title: `A1c Trends - All ${showOnly ? 'Diabetic ' : ''}Patients`,
+                title: 'A1c Trends - All Patients',
                 plot_bgcolor: '#fff6ef',
                 paper_bgcolor: '#fff6ef',
                 xaxis: { 
@@ -554,17 +703,33 @@
             Plotly.newPlot(container, traces, layout, { responsive: true });
         };
 
-        thresholdInput.addEventListener('change', loadStatistics);
-        diabeticOnlyToggle.addEventListener('change', () => {
-            renderChart();
-        });
+        startDateInput.addEventListener('change', loadStatistics);
+        endDateInput.addEventListener('change', loadStatistics);
+        sexSelect.addEventListener('change', loadStatistics);
+        citySelect.addEventListener('change', loadStatistics);
+        ageGroupSelect.addEventListener('change', loadStatistics);
+        a1cRangeSelect.addEventListener('change', loadStatistics);
         refreshButton.addEventListener('click', loadStatistics);
         clearSelection.addEventListener('click', () => {
-            diabeticOnlyToggle.checked = false;
-            renderChart();
+            startDateInput.value = '';
+            endDateInput.value = '';
+            sexSelect.value = 'all';
+            citySelect.value = 'all';
+            ageGroupSelect.value = 'all';
+            a1cRangeSelect.value = 'all';
+            loadStatistics();
         });
 
-        loadStatistics();
+        // Filter toggle functionality
+        filterToggle.addEventListener('click', () => {
+            controlsPanel.classList.toggle('collapsed');
+            filterToggle.classList.toggle('collapsed');
+        });
+
+        // Initialize
+        loadFilterOptions().then(() => {
+            loadStatistics();
+        });
     </script>
 </body>
 </html>
