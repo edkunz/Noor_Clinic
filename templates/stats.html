@@ -261,24 +261,6 @@
         color: #333;
       }
 
-      .badge {
-        display: inline-block;
-        border-radius: 999px;
-        padding: 6px 12px;
-        font-size: 0.8rem;
-        font-weight: 700;
-      }
-
-      .badge.diabetic {
-        background: #ffefd5;
-        color: #d35400;
-      }
-
-      .badge.non-diabetic {
-        background: #f0f4ff;
-        color: #3450a1;
-      }
-
       .panel-copy {
         color: #8a6b45;
         font-size: 0.92rem;
@@ -301,7 +283,7 @@
 
         .priority-controls {
             display: grid;
-            grid-template-columns: 1.3fr repeat(4, minmax(0, 1fr));
+            grid-template-columns: 1fr 1.3fr repeat(4, minmax(0, 1fr));
             gap: 12px;
             margin-bottom: 18px;
         }
@@ -477,6 +459,16 @@
             </select>
           </div>
           <div class="control-group">
+            <label for="ageSelect">Age group at registration</label>
+            <select id="ageSelect">
+              <option value="all">All ages</option>
+              <option value="20-39">20-39</option>
+              <option value="40-49">40-49</option>
+              <option value="50-64">50-64</option>
+              <option value="65+">65+</option>
+            </select>
+          </div>
+          <div class="control-group">
             <label for="timeRangeSelect">Trend chart window</label>
             <select id="timeRangeSelect">
               <option value="12">Last 12 months</option>
@@ -484,9 +476,6 @@
               <option value="36">Last 36 months</option>
               <option value="all">All available</option>
             </select>
-          </div>
-          <div class="control-group">
-            <div class="badge diabetic" id="thresholdBadge">Threshold 9%</div>
           </div>
         </div>
 
@@ -566,6 +555,13 @@
               </div>
             </div>
             <div class="priority-controls">
+              <select id="priorityAgeSelect">
+                <option value="all">All ages</option>
+                <option value="20-39">Ages 20-39</option>
+                <option value="40-49">Ages 40-49</option>
+                <option value="50-64">Ages 50-64</option>
+                <option value="65+">Ages 65+</option>
+              </select>
               <input
                 type="text"
                 id="prioritySearchInput"
@@ -626,14 +622,15 @@
         "trendDirectionSelect",
       );
       const citySelect = document.getElementById("citySelect");
+      const ageSelect = document.getElementById("ageSelect");
       const timeRangeSelect = document.getElementById("timeRangeSelect");
       const riskTimeRangeSelect =
         document.getElementById("riskTimeRangeSelect");
-      const thresholdBadge = document.getElementById("thresholdBadge");
       const refreshButton = document.getElementById("refreshButton");
       const clearSelection = document.getElementById("clearSelection");
       const priorityPatients = document.getElementById("priorityPatients");
       const priorityMeta = document.getElementById("priorityMeta");
+      const priorityAgeSelect = document.getElementById("priorityAgeSelect");
       const prioritySearchInput =
         document.getElementById("prioritySearchInput");
       const priorityRiskFilter = document.getElementById("priorityRiskFilter");
@@ -671,6 +668,35 @@
 
       const formatPercent = (value) =>
         value === null || value === undefined ? "N/A" : `${value}%`;
+
+      const getAgeGroupLabel = (ageGroup) =>
+        ageGroup === "all" ? "All ages" : `Ages ${ageGroup}`;
+
+      const patientMatchesAgeGroup = (patient, ageGroup) => {
+        if (ageGroup === "all") {
+          return true;
+        }
+
+        const age = Number(patient.age_at_registration);
+        if (!Number.isFinite(age)) {
+          return false;
+        }
+
+        if (ageGroup === "20-39") {
+          return age >= 20 && age <= 39;
+        }
+        if (ageGroup === "40-49") {
+          return age >= 40 && age <= 49;
+        }
+        if (ageGroup === "50-64") {
+          return age >= 50 && age <= 64;
+        }
+        if (ageGroup === "65+") {
+          return age >= 65;
+        }
+
+        return true;
+      };
 
       const buildLatestA1cBuckets = (values) => {
         const bucketDefinitions = [
@@ -772,6 +798,7 @@
         const container = document.getElementById("populationTrendChart");
         const fullMonthly = statsData.monthly_summary || [];
         const selectedWindow = timeRangeSelect.value;
+        const ageGroupLabel = getAgeGroupLabel(ageSelect.value);
         const monthly =
           selectedWindow === "all"
             ? fullMonthly
@@ -839,14 +866,6 @@
           },
           {
             x: months,
-            y: monthly.map(() => Number(thresholdInput.value) || 9.0),
-            mode: "lines",
-            name: `Threshold ${Number(thresholdInput.value || 9).toFixed(1)}%`,
-            line: { color: "#ff3d00", width: 2, dash: "dash" },
-            hovertemplate: `Threshold: ${(Number(thresholdInput.value) || 9.0).toFixed(1)}%<extra></extra>`,
-          },
-          {
-            x: months,
             y: monthly.map((point) => point.patient_count),
             type: "bar",
             yaxis: "y2",
@@ -860,7 +879,7 @@
           container,
           traces,
           {
-            title: "Population Control Over Time",
+            title: `Population Control Over Time · ${ageGroupLabel}`,
             plot_bgcolor: "#fff6ef",
             paper_bgcolor: "#fff6ef",
             barmode: "overlay",
@@ -897,6 +916,7 @@
       const renderRiskDistributionChart = () => {
         const container = document.getElementById("riskDistributionChart");
         const riskPatients = getRiskWindowPatients();
+        const ageGroupLabel = getAgeGroupLabel(ageSelect.value);
         const buckets = buildLatestA1cBuckets(
           riskPatients.map((patient) => patient.latest_a1c),
         );
@@ -927,7 +947,7 @@
             },
           ],
           {
-            title: windowLabel,
+            title: `${windowLabel} · ${ageGroupLabel}`,
             plot_bgcolor: "#fff6ef",
             paper_bgcolor: "#fff6ef",
             xaxis: { title: "Latest A1c bucket" },
@@ -946,6 +966,7 @@
       const renderTrendSummaryChart = () => {
         const container = document.getElementById("trendSummaryChart");
         const summary = statsData.trend_summary || {};
+        const ageGroupLabel = getAgeGroupLabel(ageSelect.value);
         const labels = ["Improving", "Worsening", "Stable", "Single visit"];
         const values = [
           summary.improving || 0,
@@ -971,7 +992,7 @@
             },
           ],
           {
-            title: "Direction of Change",
+            title: `Direction of Change · ${ageGroupLabel}`,
             paper_bgcolor: "#fff6ef",
             plot_bgcolor: "#fff6ef",
             margin: { t: 60, b: 20, l: 20, r: 20 },
@@ -982,9 +1003,17 @@
       };
 
       const renderPriorityPatients = () => {
+        if (!statsData) {
+          return;
+        }
+
         const threshold = Number(thresholdInput.value) || 9.0;
         const recentWindow = priorityRecentFilter.value;
-        const cutoffDate = getRecencyCutoffDate(recentWindow, statsData.patients || []);
+        const priorityAgeGroup = priorityAgeSelect.value;
+        const cutoffDate = getRecencyCutoffDate(
+          recentWindow,
+          statsData.priority_patients || [],
+        );
         const searchTerm = prioritySearchInput.value.trim().toLowerCase();
         const trendMap = {
           worsening: "increasing",
@@ -993,7 +1022,7 @@
           single_visit: "single_visit",
         };
 
-        const patients = (statsData.patients || [])
+        const patients = (statsData.priority_patients || [])
           .map((patient) => {
             const latestDateObj = patient.latest_date
               ? new Date(patient.latest_date)
@@ -1015,6 +1044,10 @@
                 .toLowerCase()
                 .includes(searchTerm)
             ) {
+              return false;
+            }
+
+            if (!patientMatchesAgeGroup(patient, priorityAgeGroup)) {
               return false;
             }
 
@@ -1126,12 +1159,11 @@
       };
 
       const loadStatistics = async () => {
-        const threshold = Number(thresholdInput.value) || 9.0;
-        thresholdBadge.textContent = `Threshold ${threshold.toFixed(1)}%`;
         const params = new URLSearchParams({
-          threshold: threshold.toString(),
+          threshold: (Number(thresholdInput.value) || 9.0).toString(),
           trend_direction: trendDirectionSelect.value,
           city: citySelect.value,
+          age_group: ageSelect.value,
         });
 
         const response = await fetch(`/api/stats?${params.toString()}`);
@@ -1149,6 +1181,18 @@
             "All cities",
             data.filters.city,
           );
+          syncSelectOptions(
+            ageSelect,
+            data.filter_options.age_groups,
+            "All ages",
+            data.filters.age_group,
+          );
+          syncSelectOptions(
+            priorityAgeSelect,
+            data.filter_options.age_groups,
+            "All ages",
+            priorityAgeSelect.value,
+          );
           filterOptionsLoaded = true;
         } else {
           syncSelectOptions(
@@ -1156,6 +1200,18 @@
             data.filter_options.cities,
             "All cities",
             citySelect.value,
+          );
+          syncSelectOptions(
+            ageSelect,
+            data.filter_options.age_groups,
+            "All ages",
+            ageSelect.value,
+          );
+          syncSelectOptions(
+            priorityAgeSelect,
+            data.filter_options.age_groups,
+            "All ages",
+            priorityAgeSelect.value,
           );
         }
 
@@ -1178,8 +1234,10 @@
       thresholdInput.addEventListener("change", loadStatistics);
       trendDirectionSelect.addEventListener("change", loadStatistics);
       citySelect.addEventListener("change", loadStatistics);
+      ageSelect.addEventListener("change", loadStatistics);
       timeRangeSelect.addEventListener("change", renderPopulationTrendChart);
       riskTimeRangeSelect.addEventListener("change", renderRiskDistributionChart);
+      priorityAgeSelect.addEventListener("change", renderPriorityPatients);
       prioritySearchInput.addEventListener("input", renderPriorityPatients);
       priorityRiskFilter.addEventListener("change", renderPriorityPatients);
       priorityTrendFilter.addEventListener("change", renderPriorityPatients);
@@ -1189,6 +1247,8 @@
       clearSelection.addEventListener("click", () => {
         trendDirectionSelect.value = "all";
         citySelect.value = "all";
+        ageSelect.value = "all";
+        priorityAgeSelect.value = "all";
         thresholdInput.value = "9.0";
         timeRangeSelect.value = "24";
         riskTimeRangeSelect.value = "12";
