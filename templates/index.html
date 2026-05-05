@@ -250,10 +250,6 @@
             <div id="resultsList"></div>
         </div>
 
-        <div class="placeholder" id="placeholder">
-            👆 Start by searching for a patient ID or city name
-        </div>
-
         <div class="dashboard-section" id="dashboardSection" style="display: none;">
             <h2>📊 Recent Active Patients</h2>
             <div class="patients-grid" id="patientGrid"></div>
@@ -264,7 +260,6 @@
         const searchInput = document.getElementById('searchInput');
         const resultsList = document.getElementById('resultsList');
         const results = document.getElementById('results');
-        const placeholder = document.getElementById('placeholder');
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('errorMessage');
         const dashboardSection = document.getElementById('dashboardSection');
@@ -278,7 +273,6 @@
 
             if (query.length < 2) {
                 results.classList.remove('show');
-                placeholder.style.display = 'block';
                 errorMessage.classList.remove('show');
                 return;
             }
@@ -298,7 +292,6 @@
                             errorMessage.classList.add('show');
                             resultsList.innerHTML = '';
                             results.classList.add('show');
-                            placeholder.style.display = 'none';
                             return;
                         }
 
@@ -307,7 +300,6 @@
                         if (patients.length === 0) {
                             resultsList.innerHTML = '<div class="placeholder">No patients found</div>';
                             results.classList.add('show');
-                            placeholder.style.display = 'none';
                             return;
                         }
 
@@ -327,7 +319,6 @@
                             </div>
                         `).join('');
 
-                        placeholder.style.display = 'none';
                         results.classList.add('show');
                     })
                     .catch(error => {
